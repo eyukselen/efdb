@@ -1,8 +1,11 @@
 import socket
 import json
 
+with open('./data_file.json') as f:
+    json_file = json.load(f)
 
-def send_command(cmd_json):
+
+def send_command(cmd_dict, data=None):
     try:
         # Send data
         # Create a TCP/IP socket
@@ -10,7 +13,7 @@ def send_command(cmd_json):
         # Connect the socket to the port where the server is listening
         server_address = ('localhost', 9999)
         sock.connect(server_address)
-        message = json.dumps(cmd_json).encode('utf-8')
+        message = json.dumps(cmd_dict).encode('utf-8')
         sock.sendall(message)
         received = sock.recv(4096)
         print(received.decode())

@@ -1,0 +1,4 @@
+{"action": "put_doc", 
+ "name": "sample_table2",
+ "data": "This is a sample data"
+}
