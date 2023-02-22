@@ -1,6 +1,7 @@
 import json
 import os
 import socket
+import logging
 
 
 WORKING_PATH = os.getcwd()
@@ -8,29 +9,47 @@ MODULE_PATH = os.path.dirname(os.path.abspath(__file__))
 EFDB_PATH = MODULE_PATH + "/efdb_data"
 NUMBER_OF_CLIENTS = 5
 MESSAGE_SIZE = 4096
-TRAIL_PATH = MODULE_PATH + '/trail'
-TRAIL_FILE = TRAIL_PATH + '/trail.log'
+LOG_PATH = MODULE_PATH + '/log'  # log folder
+LOG_FILE = LOG_PATH + '/server.log'  # log file
+
+
+def create_path_if_not_exist(folder_path):
+    os.makedirs(folder_path, exist_ok=True)
+    return 'Checked:' + folder_path
+
+
+paths_to_check = [EFDB_PATH, LOG_PATH, ]
+paths_to_check = list(map(create_path_if_not_exist, paths_to_check))
+
+# region logging
+logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO,
+                    filename=LOG_FILE,
+                    filemode='a')
+server_log = logging.getLogger('server')
+server_log.info('Server Initializing ...')
+# endregion
+
+server_log.info(paths_to_check)
 
 
 class RequestHandler:
-    def __init__(self, socket, address, request) -> None:
+    def __init__(self, logger, socket, address, request, ) -> None:
         self.request = request
         self.socket = socket
         self.address = address
-        self.db_ops = DbOps()
+        self.db_ops = DbOps(logger)
+        self.logger = logger
 
     def _process(self):
-        with open(TRAIL_FILE, 'ab') as f:
-            f.write(self.request)
-            f.write(b'\n')
-            response = self.db_ops.process_message(self.request)
-            # response = 'HTTP/1.0 200 OK\n\nSuccess!'
-            self.socket.sendall(response.encode())
-            self.socket.close()
+        self.logger.info(self.request)
+        response = self.db_ops.process_message(self.request)
+        # response = 'HTTP/1.0 200 OK\n\nSuccess!'
+        self.socket.sendall(response.encode())
+        self.socket.close()
 
 
 class DbOps:
-    def __init__(self) -> None:
+    def __init__(self, logger) -> None:
         self.commands = {"get_doc": self.get_doc,
                          "put_doc": self.put_doc,
                          "del_doc": self.del_doc,
@@ -61,12 +80,14 @@ class DbOps:
         # if exist override
         with open(key_path, 'w') as f:
             f.write(message['data'])
+
         return "Put"
 
 
 class EfdbServer:
-    def __init__(self, ip_address='localhost', port=9999) -> None:
+    def __init__(self, logger, ip_address='localhost', port=9999) -> None:
         self.server_address = (ip_address, port)
+        self.logger = logger
 
     def serve(self) -> None:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -80,10 +101,11 @@ class EfdbServer:
             newSocket, address = self.sock.accept()
             receivedData = newSocket.recv(MESSAGE_SIZE)
             if receivedData:
-                handler = RequestHandler(newSocket, address, receivedData)
+                handler = RequestHandler(server_log, newSocket,
+                                         address, receivedData)
                 handler._process()
 
 
 if __name__ == '__main__':
-    server = EfdbServer()
+    server = EfdbServer(server_log)
     server.serve()

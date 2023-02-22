@@ -21,4 +21,6 @@ def send_command(cmd_json):
 send_command({"action": "get_doc", "name": "sample_table"})
 send_command({"action": "put_doc", "name": "sample_table",
               "data": "This is a sample data"})
-send_command({"action": "del_doc", "name": "sample_table"})
+send_command({"action": "put_doc", "name": "sample_table2",
+              "data": "This is a sample data"})              
+send_command({"action": "del_doc", "name": "sample_table2"})
