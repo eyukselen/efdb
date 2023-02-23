@@ -33,7 +33,7 @@ server_log.info(paths_to_check)
 
 
 class RequestHandler:
-    def __init__(self, logger, socket, address, request, ) -> None:
+    def __init__(self, logger, socket, address, request) -> None:
         self.request = request
         self.socket = socket
         self.address = address
@@ -42,7 +42,8 @@ class RequestHandler:
 
     def _process(self):
         self.logger.info(self.request)
-        response = self.db_ops.process_message(self.request)
+        result, message = self.db_ops.process_message(self.request)
+        response = '|'.join([result, message])
         # response = 'HTTP/1.0 200 OK\n\nSuccess!'
         self.socket.sendall(response.encode())
         self.socket.close()
@@ -59,29 +60,46 @@ class DbOps:
         cmd = json.loads(message.decode('utf-8'))
         return self.commands[cmd['action']](cmd)
 
-    def get_doc(self, message):
-        key_path = os.path.join(EFDB_PATH, message['name'])
-        res = "Not found"
-        if os.path.exists(key_path):
-            with open(key_path, 'r') as f:
-                res = f.read()
-        return res
+    def _get_doc_path(self, cmd):
+        return os.path.join(EFDB_PATH, cmd['path'])
 
-    def del_doc(self, message):
-        key_path = os.path.join(EFDB_PATH, message['name'])
-        if os.path.exists(key_path):
-            os.remove(key_path)
-            return "Deleted"
+    def _get_doc_full_name(self, cmd):
+        doc_path = self._get_doc_path(cmd)
+        doc_full_name = os.path.join(doc_path, cmd["name"])
+        return doc_full_name
+
+    def _is_doc_exist(self, path):
+        return os.path.exists(path)
+
+    def get_doc(self, cmd):
+        doc_full_name = self._get_doc_full_name(cmd)
+        if self._is_doc_exist(doc_full_name):
+            with open(doc_full_name, 'r') as f:
+                data = f.read()
+            return 'OK', data
         else:
-            return "Not Found"
+            return 'NA', 'Not Found'
 
-    def put_doc(self, message):
-        key_path = os.path.join(EFDB_PATH, message['name'])
-        # if exist override
-        with open(key_path, 'w') as f:
-            f.write(message['data'])
+    def del_doc(self, cmd):
+        doc_full_name = self._get_doc_full_name(cmd)
+        if self._is_doc_exist(doc_full_name):
+            os.remove(doc_full_name)
+            return 'OK', 'Deleted'
+        else:
+            return 'NA', 'Not Found'
 
-        return "Put"
+    def put_doc(self, cmd):
+        doc_path = self._get_doc_path(cmd)
+        doc_full_name = self._get_doc_full_name(cmd)
+        if not self._is_doc_exist(doc_path):
+            os.makedirs(doc_path, exist_ok=True)
+        with open(doc_full_name, 'w') as f:
+            f.write(cmd['data'])
+        if self._is_doc_exist(doc_full_name):
+            message = 'Updated'
+        else:
+            message = 'Put'
+        return 'OK', message
 
 
 class EfdbServer:

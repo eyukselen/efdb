@@ -7,10 +7,7 @@ with open('./data_file.json') as f:
 
 def send_command(cmd_dict, data=None):
     try:
-        # Send data
-        # Create a TCP/IP socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # Connect the socket to the port where the server is listening
         server_address = ('localhost', 9999)
         sock.connect(server_address)
         message = json.dumps(cmd_dict).encode('utf-8')
@@ -21,9 +18,10 @@ def send_command(cmd_dict, data=None):
         sock.close()
 
 
-send_command({"action": "get_doc", "name": "sample_table"})
-send_command({"action": "put_doc", "name": "sample_table",
+send_command({"action": "get_doc", "path": "bucket1", "name": "doc1"})
+send_command({"action": "put_doc", "path": "bucket1", "name": "doc1",
               "data": "This is a sample data"})
-send_command({"action": "put_doc", "name": "sample_table2",
+send_command({"action": "put_doc", "path": "bucket1", "name": "doc0",
               "data": "This is a sample data"})
-send_command({"action": "del_doc", "name": "sample_table2"})
+send_command({"action": "del_doc", "path": "bucket1", "name": "doc1"})
+send_command({"action": "get_doc", "path": "bucket1", "name": "doc0"})
