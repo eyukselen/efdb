@@ -103,6 +103,9 @@ class DbOps:
 
 
 class EfdbServer:
+    """
+    Main Service to be run
+    """
     def __init__(self, logger, ip_address='localhost', port=9999) -> None:
         self.server_address = (ip_address, port)
         self.logger = logger

@@ -1,6 +1,7 @@
 import socket
 import sys
 from datetime import datetime
+import json 
 
 ip_address='localhost'
 port=9999
@@ -17,11 +18,11 @@ sock.bind(server_address)
 sock.listen(1)
 newSocket, address = sock.accept()
 receivedData = newSocket.recv(MESSAGE_SIZE).decode('utf-8')
-mesg, size = receivedData.split(':')
+meta = json.loads(receivedData)
 # print(mesg, size)
 toc = datetime.now()
-print('Starting receiving...' + size + ' bytes\n')
-newSocket.send("Server ready!".encode('utf-8'))
+print('Starting receiving...' + meta['name'] + ' of ' + meta['size'] + ' bytes\n')
+newSocket.send("ready".encode('utf-8'))
 data = bytearray()
 while True:
     buff = newSocket.recv(MESSAGE_SIZE)
@@ -29,7 +30,11 @@ while True:
         break
     data.extend(buff)
 print('size of received bytes:' + str(sys.getsizeof(data)))
+print(data)
+final_msg = "received:" + str(sys.getsizeof(data))
+newSocket.send(final_msg.encode('utf-8'))
 tic =  datetime.now()
 print(tic-toc)
-# print(data.decode('utf-8'))
+print( "=" + data.decode('utf-8') + "=")
+print( sys.getsizeof(data.decode('utf-8')))
 
