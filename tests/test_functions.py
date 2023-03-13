@@ -12,7 +12,6 @@ from client.client import Client
 #     json_file = json.load(f)
 
 
-
 class TestDBOps(unittest.TestCase):
 
     def test_get(self):
